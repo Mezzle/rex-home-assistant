@@ -19,9 +19,9 @@ Initial implementation; not yet tested on Home Assistant Supervisor. Rex Linux
 is itself in testing. The image pins Rex **0.1.0-preview.13** and verifies each
 architecture's archive against its published SHA-256 checksum.
 
-Install locally by copying `rex/` to `/addons/rex`. This repository has no Git
-remote configured yet; once published, add its Git URL to Home Assistant's
-add-on repository list. Supervisor builds the image locally.
+Add `https://github.com/Mezzle/rex-home-assistant` to Home Assistant's
+add-on repository list, then install **Rex**. Supervisor builds the image locally.
+Alternatively, install locally by copying `rex/` to `/addons/rex`.
 
 ## Development
 

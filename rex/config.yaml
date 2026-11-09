@@ -1,6 +1,7 @@
 name: Rex
 version: "0.1.0"
 slug: rex
+url: https://github.com/Mezzle/rex-home-assistant/tree/main/rex
 description: Persistent Rex terminals with private access through built-in Tailscale
 arch:
   - amd64

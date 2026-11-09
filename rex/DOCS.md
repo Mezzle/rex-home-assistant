@@ -6,10 +6,11 @@ with Supervisor and a Tailscale account. No separate Tailscale add-on is require
 
 ## Install and connect
 
-1. Copy this repository's `rex` directory into `/addons/rex` on Home Assistant,
-   using an existing SSH or file access add-on.
-2. Reload the add-on store (called Apps in newer versions). Install **Rex**
-   from **Local add-ons**. The image builds on your machine.
+1. In the add-on store (called Apps in newer versions), open **Repositories**
+   and add `https://github.com/Mezzle/rex-home-assistant`.
+2. Install **Rex** from the Rex Home Assistant repository. The image builds on
+   your machine. Alternatively, copy `rex/` to `/addons/rex`, reload the store,
+   and install from **Local add-ons**.
 3. Set the options, start the add-on, and open its logs.
 4. Follow Rex's Tailscale sign-in link. Enable MagicDNS and HTTPS certificates
    in your tailnet if you have not already done so.
