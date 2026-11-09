@@ -1,0 +1,26 @@
+name: Rex
+version: "0.1.0"
+slug: rex
+description: Persistent Rex terminals with private access through built-in Tailscale
+arch:
+  - amd64
+  - aarch64
+startup: services
+boot: auto
+stage: experimental
+init: true
+timeout: 30
+map:
+  - type: homeassistant_config
+    path: /config
+    read_only: false
+  - type: share
+    read_only: false
+options:
+  hostname: home-assistant-rex
+  allow_tailnet_members: false
+  max_sessions: 16
+schema:
+  hostname: match(^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$)
+  allow_tailnet_members: bool
+  max_sessions: int(1,128)
