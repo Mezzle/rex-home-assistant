@@ -1,77 +1,120 @@
-# Rex
+# Rex Home Assistant administration terminal
 
-Run a Rex server on Home Assistant and connect from your Rex client through its
-built-in Tailscale connection. Requires Home Assistant OS or another installation
-with Supervisor and a Tailscale account. No separate Tailscale add-on is required.
+This provides the administration environment of an SSH add-on through Rex:
+Home Assistant CLI access, shared files, a persistent shell home and tools.
+Requires Home Assistant OS or another installation with Supervisor, a Rex client,
+and a Tailscale account. No separate Tailscale add-on is required.
 
 ## Install and connect
 
 1. In the add-on store (called Apps in newer versions), open **Repositories**
    and add `https://github.com/Mezzle/rex-home-assistant`.
-2. Install **Rex** from the Rex Home Assistant repository. The image builds on
-   your machine. Alternatively, copy `rex/` to `/addons/rex`, reload the store,
-   and install from **Local add-ons**.
-3. Set the options, start the add-on, and open its logs.
-4. Follow Rex's Tailscale sign-in link. Enable MagicDNS and HTTPS certificates
-   in your tailnet if you have not already done so.
-5. Add `https://home-assistant-rex.<your-tailnet>.ts.net` as a remote host in
-   your Rex client. Use the actual device name assigned by Tailscale if it differs.
+2. Install **Rex**. Supervisor builds the image on your machine. Alternatively,
+   copy `rex/` to `/addons/rex`, reload the store, and install from Local add-ons.
+3. Set options, start the add-on, and open its logs.
+4. Follow the Tailscale sign-in link. Enable MagicDNS and HTTPS certificates in
+   your tailnet if necessary.
+5. Add `https://home-assistant-rex.<your-tailnet>.ts.net` as a remote host in your
+   Rex client, using the actual device name assigned by Tailscale.
+6. Open a terminal and run `ha core info`, `ha core check`, `ha addons list` or
+   `ha backups list`.
 
-By default, only the Tailscale user who owns this device is admitted. Tailnet
-ACLs also apply. There is no LAN listener, published port, ingress page or TUN
-requirement. This add-on enrolls its own device independently of any existing
-Tailscale add-on.
+The `ha` CLI authenticates with the token Supervisor supplies automatically.
+There is no token to copy or enter. Keep it out of commands, logs and profiles.
+
+The default access policy admits the Tailscale user who owns this device.
+Tailnet ACLs also apply. This add-on enrolls its own device independently of an
+existing Tailscale add-on. There is no published SSH or plain HTTP listener.
 
 ## Options
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `hostname` | `home-assistant-rex` | Device name; lowercase letters, digits and hyphens, up to 63 characters. |
-| `allow_tailnet_members` | `false` | Allow other tailnet members permitted by ACLs. They share full access to these terminals and files. |
-| `max_sessions` | `16` | Maximum sessions, from 1 to 128. |
+| `hostname` | `home-assistant-rex` | Lowercase letters, digits and hyphens, up to 63 characters. |
+| `allow_tailnet_members` | `false` | Admit other tailnet members permitted by ACLs, with the same administration privileges. |
+| `max_sessions` | `16` | Maximum Rex sessions, from 1 to 128. |
+| `zsh` | `false` | Use Zsh instead of Bash for new terminals. |
+| `packages` | `[]` | Extra Alpine package names installed at every start. |
+| `init_commands` | `[]` | Bash commands run in order before Rex starts; a failure prevents startup. |
 
-Restart after changing options. Use an untagged, user-owned enrollment with the
-default policy. Tagged devices have no owner and require broader access options;
-automated tagged enrollment is not exposed in this version.
+For example:
 
-## Files and terminals
+```yaml
+hostname: home-assistant-rex
+allow_tailnet_members: false
+max_sessions: 16
+zsh: false
+packages:
+  - ripgrep
+init_commands:
+  - mkdir -p /data/home/projects
+```
 
-- `/config`: writable Home Assistant configuration.
-- `/share`: writable shared directory.
-- `/data/home`: persistent terminal home, including SSH/Git configuration and
-  optional Rex configuration at `~/.config/rex/init.lua`.
-- `/data/rex`: persistent server state, including Tailscale enrollment.
+Startup commands are executable configuration with administration privileges;
+only trusted administrators should edit them. Package names are passed as literal
+arguments to apk. Package installation needs network access. Restart after
+changing options. Shell profiles are copied on first start and are not overwritten.
+Use an untagged, user-owned Tailscale enrollment with the default policy.
 
-Terminals run as root inside the add-on container and can change mounted files.
-They do not open a Home Assistant OS host shell. Protection mode can stay enabled;
-no host networking, Docker socket, host PID namespace, Supervisor API access or
-extra capabilities are requested. Bash, Git, OpenSSH client, curl, jq and nano
-are included. The `ha` CLI is not included yet.
+## Permissions and shared files
 
-Anyone who connects can run programs and edit Home Assistant configuration.
-Restrict tailnet access to people you trust with those permissions.
+Version 0.2.0 intentionally grants the same Supervisor **manager** role used by
+Advanced SSH & Web Terminal, plus Home Assistant Core API access. Anyone who can
+connect can manage Core, add-ons and backups, access private configuration and
+run programs with the add-on's permissions. Treat Rex access as administration
+access to Home Assistant, not as a restricted terminal account.
 
-Persistent files survive restarts and image updates. Include add-on data in
-backups; keep backups private because they contain the device identity and
-anything in the terminal home. Running programs end when the add-on stops, even
-if Rex restores saved session layouts. Packages installed manually disappear
-on rebuild/update.
+Writable mounts:
+
+- `/config`: Home Assistant configuration.
+- `/addon_configs`: other add-ons' configuration directories.
+- `/addons`: local add-on sources.
+- `/backup`: backups.
+- `/media`, `/share`, `/ssl`: media, shared files and certificates.
+- `/data/home`: persistent home, shell settings/history and SSH client files.
+- `/data/rex`: saved Rex state and Tailscale identity.
+
+Host networking lets terminal commands reach services on the host/LAN. Host D-Bus
+and journal mounts support system diagnostics, subject to container security
+restrictions. Docker CLI is included; to use the host Docker socket, disable
+**Protection mode** in the add-on settings and restart. Leave protection enabled
+for normal `ha` commands. Docker access can control host containers and grant
+host-level access; it is optional and much broader than the CLI alone.
+
+Terminals run as root inside the add-on container. `ha` controls Home Assistant
+through Supervisor; this is not a direct OS host login. No raw USB/GPIO/audio
+passthrough, extra Linux capabilities, host PID namespace or AppArmor bypass is
+requested. This is not a complete clone of every advanced SSH hardware feature.
+There is no SSH/SFTP/Mosh server or web terminal; connect using Rex.
+
+Include add-on data in backups and keep backups private. The home directory and
+Rex state survive restarts/updates. Running processes end when the add-on stops,
+even if Rex restores layouts. Use `packages` for tools that must survive updates.
+
+## Upgrading from 0.1.0
+
+0.1.0 only offered Bash with `/config` and `/share`. 0.2.0 adds Supervisor and Core
+API access, more writable directories, host networking and optional Docker
+access. Review who owns the Tailscale device and your ACLs before upgrading.
+An automatic upgrade should not cross this permission change; update manually.
+Existing home and Rex state are retained.
 
 ## Troubleshooting
 
-- No connection: check logs, device approval, MagicDNS, HTTPS certificates and ACLs.
-- Unexpected name: check the device name assigned by Tailscale for duplicates.
-- Other users denied: owner-only access is the default. Review ACLs before
-  enabling `allow_tailnet_members`.
-- Revoked enrollment: stop the add-on and manage its persisted data using an
-  existing SSH add-on, or restore a backup. Uninstalling and deleting add-on data
-  also resets enrollment, but deletes the home directory and saved Rex state.
+- CLI reports missing API access: install/start through Supervisor rather than
+  plain Docker; it supplies `SUPERVISOR_TOKEN`. Never paste it into configuration.
+- Connection fails: check logs, Tailscale approval, MagicDNS, HTTPS and ACLs.
+- Other users denied: owner-only is the default. Review ACLs before allowing
+  additional tailnet members; they will have full administration access.
+- Docker cannot connect: check protection mode and restart after changing it.
+- Startup stops: check extra packages and startup commands in the configuration.
+- Unexpected device name: check the actual name assigned by Tailscale.
 
-This first version is experimental. Real Supervisor installation and both
-architecture builds still need validation.
+A real Supervisor installation and tailnet enrollment still need validation.
 
 ## References
 
-- [Rex Linux installation](https://www.superlogical.com/rex/docs/linux/installation)
-- [Rex remote access and access policy](https://www.superlogical.com/rex/docs/linux/remote-access)
+- [Advanced SSH & Web Terminal](https://github.com/hassio-addons/app-ssh)
+- [Home Assistant CLI](https://github.com/home-assistant/cli)
+- [Rex remote access](https://www.superlogical.com/rex/docs/linux/remote-access)
 - [Home Assistant app configuration](https://contributors.home-assistant.io/apps/reference/configuration/)

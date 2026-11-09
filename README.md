@@ -2,43 +2,71 @@
 
 # Rex Home Assistant
 
-An experimental Home Assistant add-on running a persistent
-[Rex](https://www.superlogical.com/rex/docs/linux/installation) terminal server.
-Connect from your Rex client through built-in Tailscale, without exposing a LAN
-port or installing a separate Tailscale add-on.
+A Home Assistant administration terminal through
+[Rex](https://www.superlogical.com/rex/docs/linux/installation), following the
+[Advanced SSH & Web Terminal](https://github.com/hassio-addons/app-ssh) model.
+Rex replaces SSH and the browser terminal as the way you connect; inside, you
+get the Home Assistant `ha` CLI, shared folders and administration tools.
 
-Supports **amd64** and **aarch64**. Includes Bash, Git, SSH client, curl, jq and
-nano, writable `/config` and `/share` mounts, and a persistent home directory.
-Terminals run inside the add-on container.
+```sh
+ha core info
+ha core check
+ha addons list
+ha backups list
+```
 
-See [installation, configuration and access details](rex/DOCS.md).
+Connect through Rex's built-in Tailscale support. No SSH server or separate
+Tailscale add-on is needed. Supports **amd64** and **aarch64**.
 
-## Status
+## Install
 
-Initial implementation; not yet tested on Home Assistant Supervisor. Rex Linux
-is itself in testing. The image pins Rex **0.1.0-preview.13** and verifies each
-architecture's archive against its published SHA-256 checksum.
+Add `https://github.com/Mezzle/rex-home-assistant` to Home Assistant's add-on
+repository list, then install **Rex**. Supervisor builds the image locally.
+See [setup, configuration and permissions](rex/DOCS.md).
 
-Add `https://github.com/Mezzle/rex-home-assistant` to Home Assistant's
-add-on repository list, then install **Rex**. Supervisor builds the image locally.
-Alternatively, install locally by copying `rex/` to `/addons/rex`.
+## Administration environment
+
+- Home Assistant CLI 5.6.0 with Supervisor manager and Core API access.
+- Writable `/config`, `/addon_configs`, `/addons`, `/backup`, `/media`, `/share`
+  and `/ssl` directories.
+- Persistent home directory, SSH client configuration, shell settings and history.
+- Bash or Zsh, custom Alpine packages and startup commands.
+- Git, Docker CLI, Python, curl, jq, rsync, SQLite, MQTT clients, tmux, editors
+  and networking tools.
+- Host networking, D-Bus and journal mounts; Docker socket access when Supervisor
+  protection mode is disabled.
+
+Like the SSH add-on, the shell runs in the add-on container; `ha` controls Home
+Assistant through Supervisor. This is not a direct Home Assistant OS host login.
+Rex terminals share one root account. People allowed to connect are Home Assistant
+administrators. The default Tailscale policy admits only the device owner.
+
+This does not bundle SSH/SFTP/Mosh servers, a browser terminal, Oh My Zsh,
+USB/GPIO/audio passthrough or raw hardware capabilities from the advanced SSH
+add-on. Rex provides terminal/session access instead.
+
+## Status and upgrades
+
+Experimental. Home Assistant Supervisor installation and real tailnet enrollment
+still need validation. Rex Linux is itself in testing. Rex **0.1.0-preview.13**
+and `ha` **5.6.0** are pinned with per-architecture SHA-256 verification.
+
+**0.2.0 grants administration access** that 0.1.0 did not have. Review the
+permissions in [DOCS.md](rex/DOCS.md) before upgrading.
 
 ## Development
 
-Build using Docker BuildKit:
-
 ```sh
-docker build --build-arg BUILD_ARCH=amd64 -t rex-home-assistant:dev rex
+docker build --platform linux/arm64 --build-arg BUILD_ARCH=aarch64 -t rex-home-assistant:test rex
+python3 -m unittest discover -s tests -v
+REX_TEST_IMAGE=rex-home-assistant:test python3 -m unittest discover -s tests -v
 ```
 
-For ARM64, add `--platform linux/arm64 --build-arg BUILD_ARCH=aarch64`.
-Enrollment uses the interactive sign-in link printed by Rex on first startup.
+The opt-in Docker test creates an isolated mock Supervisor, starts the real Rex
+server and opens a real interactive terminal to run `ha core info`. It checks
+API authentication, persistent home files and that the supplied token is not
+saved in add-on data. It does not contact a live Home Assistant or enroll a
+Tailscale device. For amd64, use `--platform linux/amd64 --build-arg BUILD_ARCH=amd64`.
 
-For upgrades, update the pinned commit and checksums in the Dockerfile, bump
-`rex/config.yaml` and the Dockerfile's version default, and update the changelog.
-Validate first-time enrollment, reconnection after restart, owner-only access,
-configuration editing and graceful shutdown on Supervisor.
-
-Run startup validation with `python3 -m unittest discover -s tests -v`
-(requires Bash and jq). Tests intercept the server command and filesystem
-preparation; they do not enroll a device or write to `/data` on the host.
+For upgrades, update pinned releases and checksums in the Dockerfile, bump
+`rex/config.yaml` and the Dockerfile version default, and update the changelog.

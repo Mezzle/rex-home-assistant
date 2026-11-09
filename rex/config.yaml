@@ -1,27 +1,55 @@
 name: Rex
-version: "0.1.0"
+version: "0.2.0"
 slug: rex
 url: https://github.com/Mezzle/rex-home-assistant/tree/main/rex
-description: Persistent Rex terminals with private access through built-in Tailscale
+description: Home Assistant administration terminals through Rex and Tailscale
 arch:
   - amd64
   - aarch64
 startup: services
 boot: auto
 stage: experimental
+breaking_versions:
+  - "0.2.0"
 init: true
 timeout: 30
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+host_network: true
+docker_api: true
+host_dbus: true
+journald: true
 map:
   - type: homeassistant_config
     path: /config
     read_only: false
   - type: share
     read_only: false
+  - type: addons
+    read_only: false
+  - type: all_addon_configs
+    path: /addon_configs
+    read_only: false
+  - type: backup
+    read_only: false
+  - type: media
+    read_only: false
+  - type: ssl
+    read_only: false
 options:
   hostname: home-assistant-rex
   allow_tailnet_members: false
   max_sessions: 16
+  zsh: false
+  packages: []
+  init_commands: []
 schema:
   hostname: match(^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$)
   allow_tailnet_members: bool
   max_sessions: int(1,128)
+  zsh: bool
+  packages:
+    - str
+  init_commands:
+    - str
