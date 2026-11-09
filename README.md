@@ -2,6 +2,20 @@
 
 # Rex Home Assistant
 
+> **Archived — known CPU compatibility limitation.** Development has stopped.
+> The bundled Rex 0.1.0-preview.13 Linux amd64 binary crashes with
+> `SIGILL: illegal instruction` on the AMD G-T48E when a client attaches to a
+> terminal. The crash occurs in libghostty's snapshot encoder at a hardware
+> `CRC32` instruction, which requires SSE4.2. This processor exposes `sse4a`,
+> but lacks `sse4_2`; SSE4a does not provide that instruction.
+>
+> Other x86-64 CPUs without SSE4.2 may also be affected. The Rex snapshot
+> inspected on 2026-11-09 (`9bcf6ac9bc540f29b67604cb141e6616310eff94`)
+> contains the same instruction sequence; it is not a verified workaround.
+> A compatible upstream Rex/libghostty build with a software CRC32 fallback
+> is needed for this hardware. Home Assistant permissions and shell settings
+> cannot resolve the crash. This repository is retained for reference.
+
 A Home Assistant administration terminal through
 [Rex](https://www.superlogical.com/rex/docs/linux/installation), following the
 [Advanced SSH & Web Terminal](https://github.com/hassio-addons/app-ssh) model.
@@ -16,7 +30,8 @@ ha backups list
 ```
 
 Connect through Rex's built-in Tailscale support. No SSH server or separate
-Tailscale add-on is needed. Supports **amd64** and **aarch64**.
+Tailscale add-on is needed. Images target **amd64** and **aarch64**; see the
+CPU compatibility limitation above.
 
 ## Install
 

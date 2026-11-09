@@ -1,5 +1,9 @@
 # Rex Home Assistant administration terminal
 
+> **Archived:** The bundled amd64 Rex binary is known to crash on the AMD
+> G-T48E, which lacks SSE4.2, during terminal snapshot encoding. See the
+> [compatibility and archival notice](../README.md) before installing.
+
 This provides the administration environment of an SSH add-on through Rex:
 Home Assistant CLI access, shared files, a persistent shell home and tools.
 Requires Home Assistant OS or another installation with Supervisor, a Rex client,
